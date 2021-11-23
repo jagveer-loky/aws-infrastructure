@@ -46,7 +46,8 @@ class StandaloneFormula private constructor(
     private val stackCreationTimeout: Duration,
     private val overriddenNetwork: Network? = null,
     private val databaseComputer: Computer,
-    private val databaseVolume: Volume
+    private val databaseVolume: Volume,
+    private val adminPasswordPlainText: String
 ) : JiraFormula {
 
     @Suppress("DEPRECATION")
@@ -57,7 +58,8 @@ class StandaloneFormula private constructor(
         jiraHomeSource: JiraHomeSource,
         database: Database,
         config: JiraNodeConfig,
-        computer: Computer
+        computer: Computer,
+        adminPasswordPlainText: String
     ) : this(
         apps = apps,
         productDistribution = ApplicationStorageWrapper(application),
@@ -68,7 +70,8 @@ class StandaloneFormula private constructor(
         jiraVolume = Volume(200),
         stackCreationTimeout = Duration.ofMinutes(30),
         databaseComputer = M4ExtraLargeElastic(),
-        databaseVolume = Volume(100)
+        databaseVolume = Volume(100),
+        adminPasswordPlainText = adminPasswordPlainText
     )
 
     @Suppress("DEPRECATION")
@@ -77,7 +80,8 @@ class StandaloneFormula private constructor(
         apps: Apps,
         application: com.atlassian.performance.tools.awsinfrastructure.api.storage.ApplicationStorage,
         jiraHomeSource: JiraHomeSource,
-        database: Database
+        database: Database,
+        adminPasswordPlainText: String
     ) : this(
         apps = apps,
         productDistribution = ApplicationStorageWrapper(application),
@@ -88,7 +92,8 @@ class StandaloneFormula private constructor(
         jiraVolume = Volume(200),
         stackCreationTimeout = Duration.ofMinutes(30),
         databaseComputer = M4ExtraLargeElastic(),
-        databaseVolume = Volume(100)
+        databaseVolume = Volume(100),
+        adminPasswordPlainText = adminPasswordPlainText
     )
 
     private val logger: Logger = LogManager.getLogger(this::class.java)
@@ -166,7 +171,7 @@ class StandaloneFormula private constructor(
         val setupDatabase = executor.submitWithLogContext("database") {
             databaseSsh.newConnection().use {
                 databaseComputer.setUp(it)
-                logger.info("Setting up database...")
+                logger.info("Setting up database with ip $databaseIp...")
                 key.get().file.facilitateSsh(databaseIp)
                 val databaseSetup = database.setup(it)
                 logger.info("Database is set up")
@@ -190,7 +195,8 @@ class StandaloneFormula private constructor(
             databaseIp = databaseIp,
             productDistribution = productDistribution,
             ssh = ssh,
-            computer = computer
+            computer = computer,
+            adminPasswordPlainText  = adminPasswordPlainText
         )
 
         uploadPlugins.get()
@@ -240,6 +246,7 @@ class StandaloneFormula private constructor(
         private var network: Network? = null
         private var databaseComputer: Computer = M4ExtraLargeElastic()
         private var databaseVolume: Volume = Volume(100)
+        private var adminPasswordPlainText: String = "admin"
 
         internal constructor(
             formula: StandaloneFormula
@@ -256,6 +263,7 @@ class StandaloneFormula private constructor(
             network = formula.overriddenNetwork
             databaseComputer = formula.databaseComputer
             databaseVolume = formula.databaseVolume
+            adminPasswordPlainText = formula.adminPasswordPlainText
         }
 
         fun config(config: JiraNodeConfig): Builder = apply { this.config = config }
@@ -267,6 +275,8 @@ class StandaloneFormula private constructor(
 
         fun databaseComputer(databaseComputer: Computer): Builder = apply { this.databaseComputer = databaseComputer }
         fun databaseVolume(databaseVolume: Volume): Builder = apply { this.databaseVolume = databaseVolume }
+
+        fun adminPasswordPlainText(adminPasswordPlainText: String): Builder = apply { this.adminPasswordPlainText = adminPasswordPlainText }
 
         internal fun network(network: Network) = apply { this.network = network }
 
@@ -281,7 +291,8 @@ class StandaloneFormula private constructor(
             stackCreationTimeout = stackCreationTimeout,
             overriddenNetwork = network,
             databaseComputer = databaseComputer,
-            databaseVolume = databaseVolume
+            databaseVolume = databaseVolume,
+            adminPasswordPlainText  = adminPasswordPlainText
         )
     }
 }

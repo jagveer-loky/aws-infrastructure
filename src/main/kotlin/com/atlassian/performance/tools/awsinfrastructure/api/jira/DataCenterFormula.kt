@@ -54,7 +54,8 @@ class DataCenterFormula private constructor(
     private val stackCreationTimeout: Duration,
     private val overriddenNetwork: Network? = null,
     private val databaseComputer: Computer,
-    private val databaseVolume: Volume
+    private val databaseVolume: Volume,
+    private val adminPasswordPlainText: String
 ) : JiraFormula {
     private val logger: Logger = LogManager.getLogger(this::class.java)
 
@@ -67,7 +68,8 @@ class DataCenterFormula private constructor(
         application: com.atlassian.performance.tools.awsinfrastructure.api.storage.ApplicationStorage,
         jiraHomeSource: JiraHomeSource,
         database: Database,
-        computer: Computer
+        computer: Computer,
+        adminPasswordPlainText: String
     ) : this(
         configs = configs,
         loadBalancerFormula = loadBalancerFormula,
@@ -79,7 +81,8 @@ class DataCenterFormula private constructor(
         jiraVolume = Volume(100),
         stackCreationTimeout = Duration.ofMinutes(30),
         databaseComputer = M4ExtraLargeElastic(),
-        databaseVolume = Volume(100)
+        databaseVolume = Volume(100),
+        adminPasswordPlainText = adminPasswordPlainText
     )
 
     @Suppress("DEPRECATION")
@@ -88,7 +91,8 @@ class DataCenterFormula private constructor(
         apps: Apps,
         application: com.atlassian.performance.tools.awsinfrastructure.api.storage.ApplicationStorage,
         jiraHomeSource: JiraHomeSource,
-        database: Database
+        database: Database,
+        adminPasswordPlainText: String
     ) : this(
         configs = (1..2).map { JiraNodeConfig.Builder().name("jira-node-$it").build() },
         loadBalancerFormula = ApacheEc2LoadBalancerFormula(),
@@ -100,7 +104,8 @@ class DataCenterFormula private constructor(
         jiraVolume = Volume(100),
         stackCreationTimeout = Duration.ofMinutes(30),
         databaseComputer = M4ExtraLargeElastic(),
-        databaseVolume = Volume(100)
+        databaseVolume = Volume(100),
+        adminPasswordPlainText = adminPasswordPlainText
     )
 
     override fun provision(
@@ -221,7 +226,8 @@ class DataCenterFormula private constructor(
                             productDistribution = productDistribution,
                             ssh = ssh,
                             config = configs[i],
-                            computer = computer
+                            computer = computer,
+                            adminPasswordPlainText = adminPasswordPlainText
                         ),
                         nodeIndex = i,
                         sharedHome = sharedHome,
@@ -238,7 +244,7 @@ class DataCenterFormula private constructor(
         val setupDatabase = executor.submitWithLogContext("database") {
             databaseSsh.newConnection().use {
                 databaseComputer.setUp(it)
-                logger.info("Setting up database...")
+                logger.info("Setting up database with ip $databaseIp...")
                 key.get().file.facilitateSsh(databaseIp)
                 val databaseSetup = database.setup(it)
                 logger.info("Database is set up")
@@ -315,6 +321,7 @@ class DataCenterFormula private constructor(
         private var network: Network? = null
         private var databaseComputer: Computer = M4ExtraLargeElastic()
         private var databaseVolume: Volume = Volume(100)
+        private var adminPasswordPlainText: String = "admin"
 
         internal constructor(
             formula: DataCenterFormula
@@ -332,6 +339,7 @@ class DataCenterFormula private constructor(
             network = formula.overriddenNetwork
             databaseComputer = formula.databaseComputer
             databaseVolume = formula.databaseVolume
+            adminPasswordPlainText = formula.adminPasswordPlainText
         }
 
         fun configs(configs: List<JiraNodeConfig>): Builder = apply { this.configs = configs }
@@ -352,6 +360,8 @@ class DataCenterFormula private constructor(
 
         fun databaseVolume(databaseVolume: Volume): Builder = apply { this.databaseVolume = databaseVolume }
 
+        fun adminPasswordPlainText(adminPasswordPlainText: String): Builder = apply { this.adminPasswordPlainText = adminPasswordPlainText }
+
         internal fun network(network: Network) = apply { this.network = network }
 
         fun build(): DataCenterFormula = DataCenterFormula(
@@ -366,7 +376,8 @@ class DataCenterFormula private constructor(
             stackCreationTimeout = stackCreationTimeout,
             overriddenNetwork = network,
             databaseComputer = databaseComputer,
-            databaseVolume = databaseVolume
+            databaseVolume = databaseVolume,
+            adminPasswordPlainText  = adminPasswordPlainText
         )
     }
 }
