@@ -246,12 +246,12 @@ class DataCenterFormula private constructor(
                 databaseComputer.setUp(it)
                 logger.info("Setting up database with ip $databaseIp...")
                 key.get().file.facilitateSsh(databaseIp)
-                val databaseSetup = database.setup(it)
+                val databaseSetup = database.performSetup(it)
                 logger.info("Database is set up")
                 logger.info("Starting database...")
                 database.start(loadBalancer.uri, it)
                 logger.info("Database is started")
-                RemoteLocation(databaseHost, databaseSetup.location)
+                RemoteLocation(databaseHost, databaseSetup.databaseDataLocation)
             }
         }
 
