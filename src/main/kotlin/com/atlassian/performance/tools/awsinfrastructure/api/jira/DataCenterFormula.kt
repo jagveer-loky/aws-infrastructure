@@ -68,8 +68,7 @@ class DataCenterFormula private constructor(
         application: com.atlassian.performance.tools.awsinfrastructure.api.storage.ApplicationStorage,
         jiraHomeSource: JiraHomeSource,
         database: Database,
-        computer: Computer,
-        adminPasswordPlainText: String
+        computer: Computer
     ) : this(
         configs = configs,
         loadBalancerFormula = loadBalancerFormula,
@@ -82,7 +81,7 @@ class DataCenterFormula private constructor(
         stackCreationTimeout = Duration.ofMinutes(30),
         databaseComputer = M4ExtraLargeElastic(),
         databaseVolume = Volume(100),
-        adminPasswordPlainText = adminPasswordPlainText
+        adminPasswordPlainText = "admin"
     )
 
     @Suppress("DEPRECATION")
@@ -91,8 +90,7 @@ class DataCenterFormula private constructor(
         apps: Apps,
         application: com.atlassian.performance.tools.awsinfrastructure.api.storage.ApplicationStorage,
         jiraHomeSource: JiraHomeSource,
-        database: Database,
-        adminPasswordPlainText: String
+        database: Database
     ) : this(
         configs = (1..2).map { JiraNodeConfig.Builder().name("jira-node-$it").build() },
         loadBalancerFormula = ApacheEc2LoadBalancerFormula(),
@@ -105,7 +103,7 @@ class DataCenterFormula private constructor(
         stackCreationTimeout = Duration.ofMinutes(30),
         databaseComputer = M4ExtraLargeElastic(),
         databaseVolume = Volume(100),
-        adminPasswordPlainText = adminPasswordPlainText
+        adminPasswordPlainText = "admin"
     )
 
     override fun provision(
@@ -246,12 +244,12 @@ class DataCenterFormula private constructor(
                 databaseComputer.setUp(it)
                 logger.info("Setting up database with ip $databaseIp...")
                 key.get().file.facilitateSsh(databaseIp)
-                val databaseSetup = database.performSetup(it)
+                val databaseDataLocation = database.setup(it)
                 logger.info("Database is set up")
                 logger.info("Starting database...")
                 database.start(loadBalancer.uri, it)
                 logger.info("Database is started")
-                RemoteLocation(databaseHost, databaseSetup.databaseDataLocation)
+                RemoteLocation(databaseHost, databaseDataLocation)
             }
         }
 

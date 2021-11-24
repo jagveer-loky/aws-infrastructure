@@ -1,7 +1,7 @@
 package com.atlassian.performance.tools.awsinfrastructure.api.dataset
 
 import com.atlassian.performance.tools.awsinfrastructure.api.AwsDatasetModification
-import com.atlassian.performance.tools.infrastructure.api.database.withLicenseString
+import com.atlassian.performance.tools.infrastructure.api.database.LicenseOverridingMysql
 import com.atlassian.performance.tools.infrastructure.api.dataset.Dataset
 import org.apache.logging.log4j.LogManager
 
@@ -23,8 +23,10 @@ class SshMysqlDatasetPublication {
         modification: AwsDatasetModification.Builder
     ) {
         val original = modification.dataset
-        val publishableDatabase = original.database
-            .withLicenseString(listOf(licenseJswSafely(), licenseJsdSafely()))
+        val publishableDatabase = LicenseOverridingMysql(
+            original.database,
+            listOf(licenseJswSafely(), licenseJsdSafely())
+        )
         val publishableModification = modification
             .dataset(
                 Dataset.Builder(original)

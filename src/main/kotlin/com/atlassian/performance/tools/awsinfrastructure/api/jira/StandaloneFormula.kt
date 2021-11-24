@@ -58,8 +58,7 @@ class StandaloneFormula private constructor(
         jiraHomeSource: JiraHomeSource,
         database: Database,
         config: JiraNodeConfig,
-        computer: Computer,
-        adminPasswordPlainText: String
+        computer: Computer
     ) : this(
         apps = apps,
         productDistribution = ApplicationStorageWrapper(application),
@@ -71,7 +70,7 @@ class StandaloneFormula private constructor(
         stackCreationTimeout = Duration.ofMinutes(30),
         databaseComputer = M4ExtraLargeElastic(),
         databaseVolume = Volume(100),
-        adminPasswordPlainText = adminPasswordPlainText
+        adminPasswordPlainText = "admin"
     )
 
     @Suppress("DEPRECATION")
@@ -80,8 +79,7 @@ class StandaloneFormula private constructor(
         apps: Apps,
         application: com.atlassian.performance.tools.awsinfrastructure.api.storage.ApplicationStorage,
         jiraHomeSource: JiraHomeSource,
-        database: Database,
-        adminPasswordPlainText: String
+        database: Database
     ) : this(
         apps = apps,
         productDistribution = ApplicationStorageWrapper(application),
@@ -93,7 +91,7 @@ class StandaloneFormula private constructor(
         stackCreationTimeout = Duration.ofMinutes(30),
         databaseComputer = M4ExtraLargeElastic(),
         databaseVolume = Volume(100),
-        adminPasswordPlainText = adminPasswordPlainText
+        adminPasswordPlainText = "admin"
     )
 
     private val logger: Logger = LogManager.getLogger(this::class.java)
@@ -173,12 +171,12 @@ class StandaloneFormula private constructor(
                 databaseComputer.setUp(it)
                 logger.info("Setting up database with ip $databaseIp...")
                 key.get().file.facilitateSsh(databaseIp)
-                val databaseSetup = database.performSetup(it)
+                val databaseDataLocation = database.setup(it)
                 logger.info("Database is set up")
                 logger.info("Starting database...")
                 database.start(jiraAddress, it)
                 logger.info("Database is started")
-                RemoteLocation(databaseHost, databaseSetup.databaseDataLocation)
+                RemoteLocation(databaseHost, databaseDataLocation)
             }
         }
 
