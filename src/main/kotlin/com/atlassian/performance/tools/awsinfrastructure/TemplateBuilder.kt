@@ -25,11 +25,6 @@ internal class TemplateBuilder(
     fun adaptTo(
         configs: List<JiraNodeConfig>
     ): String {
-        // HACK: we open all the ports for all the nodes, because they all reuse the same security group
-        val allPorts = configs
-            .flatMap { it.debug.getRequiredPorts() + it.splunkForwarder.getRequiredPorts() + it.remoteJmx.getRequiredPorts() }
-            .toSet()
-        addSecurityGroupIngress(allPorts)
         setNodesCount(configs.size)
         replaceDescription { oldDescription ->
             oldDescription
@@ -37,20 +32,6 @@ internal class TemplateBuilder(
                 ?: "Serves a ${configs.size} node Jira without a load balancer"
         }
         return build()
-    }
-
-    fun addSecurityGroupIngress(
-        ports: Set<Int>,
-        securityGroupName: String = "TomcatSecurityGroup"
-    ): TemplateBuilder = apply {
-        ports.forEach { port ->
-            addSecurityGroupIngress(
-                newResourceKey = nextIndexedResourceKey("port${port}PublicAccess"),
-                groupId = getResourceReference(securityGroupName),
-                ports = port..port,
-                permittedCidrIpv4 = "0.0.0.0/0"
-            )
-        }
     }
 
     fun addSecurityGroupIngress(
